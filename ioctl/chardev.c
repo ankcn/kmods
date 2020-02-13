@@ -56,7 +56,6 @@ static int device_open(struct inode *inode, struct file *file)
 	 * Initialize the message 
 	 */
 	Message_Ptr = Message;
-	try_module_get(THIS_MODULE);
 	return SUCCESS;
 }
 
@@ -71,7 +70,6 @@ static int device_release(struct inode *inode, struct file *file)
 	 */
 	Device_Open--;
 
-	module_put(THIS_MODULE);
 	return SUCCESS;
 }
 
@@ -231,6 +229,7 @@ long device_ioctl(//struct inode *inode,	/* see include/linux/fs.h */
  * init_module. NULL is for unimplemented functions. 
  */
 struct file_operations Fops = {
+	.owner = THIS_MODULE,
 	.read = device_read,
 	.write = device_write,
 	.unlocked_ioctl = device_ioctl,
@@ -276,7 +275,6 @@ int init_module()
  */
 void cleanup_module()
 {
-
 	/* 
 	 * Unregister the device 
 	 */
