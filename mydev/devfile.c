@@ -8,7 +8,6 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/time.h>
-#include <linux/fs.h>
 #include <linux/string.h>
 #include <asm/uaccess.h>
 #include "devfile.h"
@@ -42,6 +41,9 @@ static int __init setup_device(void)
 	}
 
 	printk(KERN_INFO "Device registered with major number %d\n", major_num);
+	printk(KERN_INFO "Create a dev file with:\n");
+	printk(KERN_INFO "mknod /dev/%s c %d 0\n", DEVICE_NAME, major_num);
+
 	return 0;
 }
 
