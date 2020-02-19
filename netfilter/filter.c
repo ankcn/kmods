@@ -3,14 +3,12 @@
  *
  */
 
-#include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/init.h>
-#include <linux/netfilter.h>
-//#include <linux/netfilter_ipv4.h>
-#include <linux/string.h>
+#include <linux/module.h>
+#include <linux/netfilter_ipv4.h>
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
+#include <linux/ip.h>
 #include <linux/tcp.h>
 
 
@@ -26,8 +24,8 @@ MODULE_DESCRIPTION("Test module for netfilter");
 #define KOBJ_FILE_NAME	port
 
 
-//
-static u16 port = 80;
+// Номер TCP порта, который следует фильтровать
+static u16 port = 23;
 
 static struct kobject *kobjp;
 
@@ -55,16 +53,25 @@ static ssize_t sysfs_write(struct kobject *kobj, struct kobj_attribute *attr,con
 static struct kobj_attribute sysfs_attr = __ATTR(KOBJ_FILE_NAME, 0660, sysfs_read, sysfs_write);
 
 
-unsigned int catch_packet(uint hooknum,
-						struct sk_buff *skb,
-						const struct net_device *in,
-						const struct net_device *out,
-						int (*okfn)(struct sk_buff *))
+/*
+ * catch_packet - Перехватчик IP пакетов
+ */
+unsigned int catch_packet(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
-	return NF_DROP;
+	struct iphdr *ip_header = (struct iphdr *) skb_network_header(skb);
+	if (ip_header->protocol == IPPROTO_TCP) {
+		struct tcphdr* tcp_header = (struct tcphdr *) skb_transport_header(skb);
+//		printk(KERN_INFO "Source Port: %u\n", tcp_header->source);
+		if (tcp_header->dest == htons(port)) {
+			printk(KERN_INFO "Droped packet to: %pI4:%u\n", &ip_header->daddr, port);
+			return NF_DROP;
+		}
+	}
+	return NF_ACCEPT;
 }
 
-/* Структура для регистрации функции перехватчика входящих ip пакетов */
+
+// Структура для регистрации функции перехватчика входящих ip пакетов
 static struct nf_hook_ops nfhops = {
 	// Заполняем структуру для регистрации hook функции
 	// Указываем имя функции, которая будет обрабатывать пакеты
@@ -106,7 +113,7 @@ static void __exit shutdown_module(void)
 {
 	kobject_put(kobjp);
 	printk(KERN_INFO "Sysfs object deleted\n");
-	nf_unregister_net_hook(&nfhops);
+	nf_unregister_net_hook(&init_net, &nfhops);
 	printk(KERN_INFO "Netfilter hook deregistered\n");
 }
 
