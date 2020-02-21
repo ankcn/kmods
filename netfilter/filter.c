@@ -61,9 +61,8 @@ unsigned int catch_packet(void *priv, struct sk_buff *skb, const struct nf_hook_
 	struct iphdr *ip_header = (struct iphdr *) skb_network_header(skb);
 	if (ip_header->protocol == IPPROTO_TCP) {
 		struct tcphdr* tcp_header = (struct tcphdr *) skb_transport_header(skb);
-//		printk(KERN_INFO "Source Port: %u\n", tcp_header->source);
 		if (tcp_header->dest == htons(port)) {
-			printk(KERN_INFO "Droped packet to: %pI4:%u\n", &ip_header->daddr, port);
+			printk(KERN_INFO "Droped packet to %pI4:%u\n", &ip_header->daddr, port);
 			return NF_DROP;
 		}
 	}
